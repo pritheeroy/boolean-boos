@@ -1,0 +1,128 @@
+[
+    {
+        "model": "items.Item",
+        "pk": 1,
+        "fields": {
+            "name": "Strawberry",
+            "price": 20,
+            "store_name": "Store X",
+            "location": "City 1"
+        }
+    },
+    {
+        "model": "items.Item",
+        "pk": 2,
+        "fields": {
+            "name": "Strawberry",
+            "price": 35,
+            "store_name": "Store Y",
+            "location": "City 2"
+        }
+    },
+    {
+        "model": "items.Item",
+        "pk": 3,
+        "fields": {
+            "name": "Strawberry",
+            "price": 50,
+            "store_name": "Store Z",
+            "location": "City 3"
+        }
+    },
+    {
+        "model": "items.Item",
+        "pk": 4,
+        "fields": {
+            "name": "Ball",
+            "price": 25,
+            "store_name": "Store X",
+            "location": "City 1"
+        }
+    },
+    {
+        "model": "items.Item",
+        "pk": 5,
+        "fields": {
+            "name": "Ball",
+            "price": 40,
+            "store_name": "Store Y",
+            "location": "City 2"
+        }
+    },
+    {
+        "model": "items.Item",
+        "pk": 6,
+        "fields": {
+            "name": "Help",
+            "price": 55,
+            "store_name": "Store Z",
+            "location": "City 3"
+        }
+    },
+    {
+        "model": "items.Item",
+        "pk": 7,
+        "fields": {
+            "name": "No",
+            "price": 30,
+            "store_name": "Store X",
+            "location": "City 1"
+        }
+    },
+    {
+        "model": "items.Item",
+        "pk": 8,
+        "fields": {
+            "name": "God",
+            "price": 45,
+            "store_name": "Store Y",
+            "location": "City 2"
+        }
+    },
+    {
+        "model": "items.Item",
+        "pk": 9,
+        "fields": {
+            "name": ":(",
+            "price": 60,
+            "store_name": "Store Z",
+            "location": "City 3"
+        }
+    },
+    {
+        "model": "items.Item",
+        "pk": 10,
+        "fields": {
+            "name": "Hunger",
+            "price": 15,
+            "store_name": "Store X",
+            "location": "City 1"
+        }
+    },
+    {
+        "model": "stores.Store",
+        "pk": 1,
+        "fields": {
+            "name": "No Frills",
+            "location": "123 Main St",
+            "items": [
+                2,
+                4
+            ]
+        }
+    },
+    {
+        "model": "stores.Store",
+        "pk": 2,
+        "fields": {
+            "name": "Metro",
+            "location": "456 Oak St",
+            "items": [
+                1,
+                3,
+                4,
+                5
+            ]
+        }
+    }
+]
