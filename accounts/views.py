@@ -15,6 +15,11 @@ from django.http import JsonResponse
 import logging
 import sys
 
+from django.contrib.auth import get_user_model, authenticate
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
 logger = logging.getLogger(__name__)
 logger.setLevel("ERROR")
 
@@ -25,38 +30,38 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 10
 
 # creating an account
+
+
 class CreateAccountView(CreateAPIView):
     serializer_class = AccountSerializer
     permission_classes = [AllowAny]
 
-    def post(self,request:Request):
+    def post(self, request: Request):
         data = request.data
 
-        serializer=self.serializer_class(data=data)
+        serializer = self.serializer_class(data=data)
 
         if serializer.is_valid():
             serializer.save()
 
-            response={
+            response = {
                 "message": "User Created Successfully",
-                "data":serializer.data
+                "data": serializer.data
             }
             return Response(data=response, status=status.HTTP_201_CREATED)
-        
+
         return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UpdateAccountView(RetrieveUpdateAPIView):
     serializer_class = AccountUpdateSerializer
-    queryset = Account.objects.all()
     permission_classes = [AllowAny]
-    # permission_classes = [IsAuthenticated]
-
-    # def put(self, request:Request):
-    #     data = request.data
 
     def get_object(self):
-        pk = self.kwargs.get('pk')
+        # pk = self.kwargs.get('pk')
+        for account in Account.objects.all():
+            if account.is_loggedin == True:
+                pk = account.id
         return Account.objects.get(pk=pk)
 
 
@@ -67,18 +72,22 @@ class AccountProfileView(ListAPIView):
     def get(self, request, *args, **kwargs):
         user = self.get_object()
         return Response(
-                    self.get_serializer(user).data,
-                    status=status.HTTP_200_OK
+            self.get_serializer(user).data,
+            status=status.HTTP_200_OK
         )
+
 
 class AccountInfoView(RetrieveAPIView):
     serializer_class = AccountSerializer
     permission_classes = [AllowAny]
 
     def get_object(self):
-        pk = self.kwargs.get('pk')
+        # pk = self.kwargs.get('pk')
+        for account in Account.objects.all():
+            if account.is_loggedin == True:
+                pk = account.id
         return get_object_or_404(Account, pk=pk)
-    
+
 
 def autocomplete(request):
     input_text = request.GET.get('input', '')
@@ -94,7 +103,8 @@ def autocomplete(request):
         if response.status_code == 200:
             predictions = response.json().get('predictions', [])
             # print(predictions)
-            addresses = [prediction['description'] for prediction in predictions]
+            addresses = [prediction['description']
+                         for prediction in predictions]
             logger.error("Addresses: %s", addresses)
             # print("address", addresses)
             return JsonResponse(addresses, safe=False)
@@ -102,3 +112,37 @@ def autocomplete(request):
             return JsonResponse([])
     except requests.exceptions.RequestException as e:
         return JsonResponse({'error': str(e)})
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        try:
+            user = Account.objects.get(email=email)
+            
+            if user.password == password:
+                # Set all other users to is_loggedin=False
+                Account.objects.exclude(id=user.id).update(is_loggedin=False)
+                
+                user.is_loggedin = True
+                user.save()
+                return Response({"message": "Login successful"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+        except Account.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        # Find all users with is_loggedin=True and set it to False
+        logged_in_users = Account.objects.filter(is_loggedin=True)
+        logged_in_users.update(is_loggedin=False)
+
+        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)

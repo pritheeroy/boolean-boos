@@ -1,26 +1,33 @@
 from rest_framework import serializers
-from django.contrib.auth.hashers import make_password
 from rest_framework.validators import ValidationError
 from .models import Account
-
 
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ['name', 'email', 'username', 'password', 'confirm_password', 'address', 'longitude', 'latitude']
-        # extra_kwargs = {'password': {'write_only': True}}
-    
-    def validate(self, attrs):
-        
-        email_exists=Account.objects.filter(email=attrs['email']).exists()
+        fields = ['name', 'email', 'username', 'password', 'confirm_password', 'address', 'longitude', 'latitude', 'is_loggedin']
 
+    def validate(self, attrs):
+        # Check if email is already in use
+        email_exists = Account.objects.filter(email=attrs['email']).exists()
         if email_exists:
             raise ValidationError("Email already in use")
 
+        # Check if passwords match
         if attrs.get('password') != attrs.get('confirm_password'):
             raise ValidationError("Passwords do not match")
 
-        return super().validate(attrs)
+        return attrs
+
+    def create(self, validated_data):
+        # Set is_loggedin to True for every new account
+        validated_data['is_loggedin'] = True
+
+        # Remove confirm_password as it's not needed for saving
+        if 'confirm_password' in validated_data:
+            del validated_data['confirm_password']
+
+        return super(AccountSerializer, self).create(validated_data)
 
 class AccountUpdateSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=False)
@@ -28,25 +35,10 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Account
-        fields = ['name', 'email', 'username', 'password', 'confirm_password', 'address', 'longitude', 'latitude']
-        # extra_kwargs = {'password': {'write_only': True}}
+        fields = ['name', 'email', 'username', 'password', 'confirm_password', 'address', 'longitude', 'latitude', 'is_loggedin']
 
-    
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
-            # if attr == 'password':
-            #     value = make_password(value)
             setattr(instance, attr, value)
-        # if 'username' in validated_data:
-        #     instance.username = validated_data['username']
-        # if 'password' in validated_data:
-        #     instance.password = validated_data['password']
-        # if 'address' in validated_data:
-        #     instance.address = validated_data['address']
-        # if 'latitude' in validated_data:
-        #     instance.latitude = validated_data['latitude']
-        # if 'longitude' in validated_data:
-        #     instance.longitude = validated_data['longitude']
-
         instance.save()
         return instance

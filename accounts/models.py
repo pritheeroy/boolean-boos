@@ -12,6 +12,7 @@ class Account(AbstractUser):
 
     longitude = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
     latitude = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
+    is_loggedin = models.BooleanField(default=False, null=False)
 
 
     groups = models.ManyToManyField(

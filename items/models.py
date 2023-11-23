@@ -3,9 +3,15 @@ import uuid
 
 
 class Item(models.Model):
+    UNIT_CHOICES = [
+        ('kg', 'Kilogram'),
+        ('lb', 'Pound'),
+        ('g', 'Gram'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
-    price = models.IntegerField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
     # store = models.ForeignKey(Store, on_delete=models.CASCADE)
     store_name = models.CharField(max_length=255)
     location = models.CharField(max_length=255)

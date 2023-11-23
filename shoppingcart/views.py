@@ -1,68 +1,63 @@
-from django.shortcuts import render
-from rest_framework import status
-from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveUpdateAPIView, RetrieveAPIView, DestroyAPIView, UpdateAPIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.request import Request
+from rest_framework.generics import ListAPIView, UpdateAPIView
 from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from .models import ShoppingCart
-from django.http import Http404
+from .models import ShoppingCart, Account
 from .serializers import ShoppingCartSerializer
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.filters import OrderingFilter
-from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 
-
-class AddItemToCartView(CreateAPIView):
+class ViewCartItems(ListAPIView):
+    permission_classes = [AllowAny]
     serializer_class = ShoppingCartSerializer
+
+    def get_queryset(self):
+        # Fetch the account that has is_loggedin set to True
+        try:
+            account = Account.objects.get(is_loggedin=True)
+            return ShoppingCart.objects.filter(account=account)
+        except Account.DoesNotExist:
+            # Handle the case where no user is logged in
+            return ShoppingCart.objects.none()
+
+class UpdateCartItems(UpdateAPIView):
     permission_classes = [AllowAny]
-
-    def perform_create(self, serializer):
-        serializer.save()
-    
-
-class RemoveItemFromCartView(DestroyAPIView):
-    permission_classes = [AllowAny]
-
-    def get_object(self):
-        item_name = self.kwargs.get('item_name')
-        cart_item = ShoppingCart.objects.filter(item_name=item_name).first()
-
-        if cart_item is None:
-            raise Http404("No ShoppingCart item found with this item name")
-
-        return cart_item
-
-
-class CheckOffItemView(UpdateAPIView):
     serializer_class = ShoppingCartSerializer
+
+
+    def update(self, request, *args, **kwargs):
+        # Fetch the account that has is_loggedin set to True
+        try:
+            account = Account.objects.get(is_loggedin=True)
+        except Account.DoesNotExist:
+            # Handle the case where no user is logged in
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        for item_data in request.data:
+            item_name = item_data.get('item_name')
+            is_checked = item_data.get('is_checked')
+            ShoppingCart.objects.update_or_create(
+                account=account, 
+                item_name=item_name, 
+                defaults={'is_checked': is_checked}
+            )
+
+        return Response({"message": "Cart updated successfully"})
+
+class DeleteCartItem(APIView):
     permission_classes = [AllowAny]
 
-    def get_object(self):
-        item_name = self.kwargs.get('item_name')
-        cart_item = ShoppingCart.objects.filter(item_name=item_name, is_checked=False).first()
+    def delete(self, request, *args, **kwargs):
+        try:
+            account = Account.objects.get(is_loggedin=True)
+        except Account.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
-        if cart_item is None:
-            raise Http404("No unchecked ShoppingCart item found with this item name")
-
-        return cart_item
-
-    def perform_update(self, serializer):
-        serializer.save(is_checked=True)
-
-
-class UncheckItemView(UpdateAPIView):
-    serializer_class = ShoppingCartSerializer
-    permission_classes = [AllowAny]
-
-    def get_object(self):
-        item_name = self.kwargs.get('item_name')
-        cart_item = ShoppingCart.objects.filter(item_name=item_name, is_checked=True).first()
-
-        if cart_item is None:
-            raise Http404("No checked ShoppingCart item found with this item name")
-
-        return cart_item
-
-    def perform_update(self, serializer):
-        serializer.save(is_checked=False)
+        item_name = kwargs.get('item_name')
+        if item_name:
+            try:
+                cart_item = ShoppingCart.objects.get(account=account, item_name=item_name)
+                cart_item.delete()
+                return Response({"message": "Item deleted successfully"})
+            except ShoppingCart.DoesNotExist:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)

@@ -102,28 +102,20 @@ class ItemUpdateView(RetrieveUpdateAPIView):
         except ValueError:
             raise Http404  # Return a 404 response if the UUID is not valid
 
-        new_price = request.data.get('price', None)
+        serializer = self.get_serializer(item, data=request.data, partial=True)
 
-        if new_price is not None:
-            try:
-                # Validate that the new_price is a valid number
-                new_price = float(new_price)
-            except ValueError:
-                return Response(
-                    {'error': 'Invalid price format. Please provide a valid number.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        if serializer.is_valid():
+            # Additional logic for handling new fields
+            is_weighed_by_unit = request.data.get('is_weighed_by_unit', None)
+            unit_of_measure = request.data.get('unit_of_measure', None)
 
-            item.price = new_price
-            item.save()
+            if is_weighed_by_unit is not None:
+                item.is_weighed_by_unit = is_weighed_by_unit
 
-            # Success
-            return Response(
-                self.get_serializer(item).data,
-                status=status.HTTP_200_OK
-            )
+            if is_weighed_by_unit and unit_of_measure:
+                item.unit_of_measure = unit_of_measure
+
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(
-                {'error': 'Enter a new price.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
