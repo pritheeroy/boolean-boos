@@ -14,6 +14,8 @@ import requests  # Import requests
 from django.http import JsonResponse
 import logging
 import sys
+import os
+
 
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework.views import APIView
@@ -94,7 +96,7 @@ def autocomplete(request):
     if not input_text:
         return JsonResponse([])
 
-    google_api_key = 'AIzaSyDpIWKiBj1P0x5buBX2losmBknSRYn1HVI'
+    google_api_key = os.environ.get('GOOGLE_API_KEY')
     url = f"https://maps.googleapis.com/maps/api/place/autocomplete/json?input={input_text}&key={google_api_key}&types=address"
 
     try:

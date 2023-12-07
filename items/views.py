@@ -13,11 +13,15 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from rest_framework import status
-from django.http import Http404
+from django.http import Http404, HttpResponse
+from django.db import connection
+import requests
+from requests.exceptions import RequestException
+
 
 
 class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 10
+    page_size = 1000
     page_size_query_param = "page_size"
     max_page_size = 10
 
@@ -27,18 +31,38 @@ class ItemView(ListAPIView):
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     ordering_fields = ['price', 'location']  # Sort by Price and Location
-    filterset_fields = ['name']  # Search by name or store
+    # filterset_fields = ['name']  # Search by name or store
     permission_classes = [AllowAny]
 
     def get_queryset(self):
         search_term = self.request.query_params.get('name')
         queryset = Item.objects.all()
 
-        # Filter by name if a search term is provided
-        if search_term:
-            queryset = queryset.filter(name__icontains=search_term)
+        try:
+            if search_term:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT id FROM Items_item WHERE LOWER(name) ILIKE LOWER(%s)",
+                        [f"%{search_term.lower()}%"]
+                    )
+                    results = [row[0] for row in cursor.fetchall()]
+
+                # Filter the queryset based on the IDs from the SQL query
+                queryset = queryset.filter(id__in=results)
+        except:
+            return queryset.filter(id__in=[])
 
         return queryset
+
+    # def get_queryset(self):
+    #     search_term = self.request.query_params.get('name')
+
+    #     queryset = Item.objects.all()
+
+    #     if search_term:
+    #         queryset = queryset.filter(name__icontains=search_term)
+
+    #     return queryset
 
 
 class ItemDetailView(ListAPIView):
@@ -119,3 +143,19 @@ class ItemUpdateView(RetrieveUpdateAPIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+def proxy_image(request):
+    image_url = request.GET.get('url')
+    if not image_url:
+        return HttpResponse('No image URL provided', status=400)
+
+    try:
+        response = requests.get(image_url, stream=True)
+        response.raise_for_status()  # This will raise an HTTPError if the HTTP request returned an unsuccessful status code
+        return HttpResponse(response.content, content_type=response.headers['Content-Type'])
+    except requests.HTTPError as e:
+        # If the image URL is incorrect or the image is not accessible
+        return HttpResponse('Image not found or access denied', status=e.response.status_code)
+    except requests.RequestException as e:
+        # For any other exceptions that may occur
+        return HttpResponse('An error occurred while fetching the image', status=500)

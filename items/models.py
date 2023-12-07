@@ -1,5 +1,6 @@
 from django.db import models
 import uuid
+from django.contrib.postgres.fields import CIText
 
 
 class Item(models.Model):
@@ -10,7 +11,7 @@ class Item(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=255)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     # store = models.ForeignKey(Store, on_delete=models.CASCADE)
     store_name = models.CharField(max_length=255)

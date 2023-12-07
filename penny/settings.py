@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-+#wc+4cdf%r&_+6smg(-jp8q#d%3xgq-hup^_gj67pjatcslab
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["boolean-boos.onrender.com"]
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -138,8 +138,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
-CORS_ORIGIN_ALLOW_ALL = True
 
 
 # Static files (CSS, JavaScript, Images)
